@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Firefox Profile Launcher
+Comment=Launch Firefox with a selected profile
+Exec=/usr/bin/firefox-profile-launcher
+Icon=firefox
+Terminal=false
+Categories=Network;WebBrowser;
+StartupNotify=true

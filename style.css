@@ -1,0 +1,18 @@
+/* GTK4 compatible CSS */
+/* 
+button {
+  font-size: 15px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background-color: @theme_base_color;
+  color: @theme_text_color;
+}
+
+button:hover {
+  background-color: @theme_selected_bg_color;
+}
+
+* {
+  background-color: #000000;
+}
+*/

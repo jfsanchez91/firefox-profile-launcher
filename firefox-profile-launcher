@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+import os
+import sys
+import subprocess
+import configparser
+import gi
+import argparse
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import Gtk, Gdk
+
+APP_NAME = "Firefox Profile Launcher"
+PROFILES_DIR = os.path.expanduser("~/.mozilla/firefox")
+PROFILES_PATH = os.path.join(PROFILES_DIR, "profiles.ini")
+DEFAULT_STYLE_PATH = "/usr/share/firefox-profile-launcher/style.css"
+
+def _write_stderr(msg: str) -> None:
+    sys.stderr.write(msg + "\n")
+
+def debug(msg: str) -> None:
+    _write_stderr("[DEBUG]: " + msg)
+
+def info(msg: str) -> None:
+    _write_stderr("[INFO]: " + msg)
+
+def warn(msg: str) -> None:
+    _write_stderr("[WARN]: " + msg)
+
+def error(msg: str) -> None:
+    _write_stderr("[ERROR]: " + msg)
+
+
+def get_profiles():
+    config = configparser.ConfigParser()
+    config.read(PROFILES_PATH)
+
+    profiles = []
+    for section in config.sections():
+        if section.startswith("Profile"):
+            name = config[section].get("Name")
+            path = config[section].get("Path")
+            if name and path:
+                profiles.append(
+                    {"name": name, "path": os.path.join(PROFILES_DIR, path)}
+                )
+    return profiles
+
+
+class ProfileDialog(Gtk.Application):
+    def __init__(self, args):
+        super().__init__(application_id="net.jfsanchez.FirefoxProfileLauncher")
+        self.args = args
+        self.connect("activate", self.on_activate)
+
+    def on_activate(self, app):
+        # Create main window
+        window = Gtk.ApplicationWindow(application=app)
+        window.set_title(APP_NAME)
+        window.set_default_size(500, 320)
+        window.set_resizable(False)
+
+        # Apply CSS
+        if os.path.exists(self.args.style):
+            css_provider = Gtk.CssProvider()
+            css_provider.load_from_path(self.args.style)
+            Gtk.StyleContext.add_provider_for_display(
+                Gdk.Display.get_default(),
+                css_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_USER
+            )
+        else:
+            warn(f'Style file "{self.args.style}" not found')
+
+        # Create scrollable area
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_margin_top(20)
+        scrolled.set_margin_bottom(20)
+        scrolled.set_margin_start(20)
+        scrolled.set_margin_end(20)
+
+        outer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        outer_box.set_valign(Gtk.Align.CENTER)
+        outer_box.set_halign(Gtk.Align.CENTER)
+
+        button_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        button_box.set_valign(Gtk.Align.CENTER)
+        button_box.set_halign(Gtk.Align.CENTER)
+
+        # Add profiles
+        for profile in get_profiles():
+            button = self.create_profile_button(profile)
+            button_box.append(button)
+
+        outer_box.append(button_box)
+        scrolled.set_child(outer_box)
+        window.set_child(scrolled)
+        window.present()
+
+
+    def create_profile_button(self, profile):
+        name = profile["name"]
+        path = profile["path"]
+
+        icon_path = os.path.join(path, "profile.jpg")
+        if os.path.isfile(icon_path):
+            try:
+                image = Gtk.Image.new_from_file(icon_path)
+            except Exception as e:
+                error(f"Error loading image (profile={name}): {e}.")
+                image = Gtk.Image.new_from_icon_name("avatar-default")
+        else:
+            warn(f"Profile image not found (profile={name}).")
+            image = Gtk.Image.new_from_icon_name("avatar-default")
+
+        image.set_pixel_size(82)
+
+        # Create horizontal layout
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        hbox.set_margin_top(6)
+        hbox.set_margin_bottom(6)
+        hbox.set_margin_start(12)
+        hbox.set_margin_end(12)
+        hbox.append(image)
+
+        label = Gtk.Label(label=name)
+        label.set_markup(f'<span size="30000">{name}</span>')
+        label.set_xalign(0.0)
+        label.set_hexpand(True)
+        hbox.append(label)
+
+        button = Gtk.Button()
+        button.set_child(hbox)
+        button.connect("clicked", self.on_profile_clicked, name)
+
+        return button
+
+    def on_profile_clicked(self, button, profile_name):
+        subprocess.Popen(["firefox", "-P", profile_name])
+        self.quit()
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog=APP_NAME,
+        description="Launch Firefox with a selected profile",
+    )
+    parser.add_argument(
+        "-s",
+        "--style",
+        default=DEFAULT_STYLE_PATH,
+        required=False,
+    )
+    ProfileDialog(parser.parse_args()).run()
+
+if __name__ == "__main__":
+    main()
