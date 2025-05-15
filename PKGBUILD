@@ -1,7 +1,7 @@
 # Maintainer: Jorge F. Sanchez <mail@jfsanchez.net>
 pkgname=firefox-profile-launcher
 pkgver=1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Simple Firefox profile launcher"
 arch=("any")
 url="https://github.com/jfsanchez91/firefox-profile-launcher"

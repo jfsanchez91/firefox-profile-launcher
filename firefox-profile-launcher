@@ -15,17 +15,22 @@ PROFILES_DIR = os.path.expanduser("~/.mozilla/firefox")
 PROFILES_PATH = os.path.join(PROFILES_DIR, "profiles.ini")
 DEFAULT_STYLE_PATH = "/usr/share/firefox-profile-launcher/style.css"
 
+
 def _write_stderr(msg: str) -> None:
     sys.stderr.write(msg + "\n")
+
 
 def debug(msg: str) -> None:
     _write_stderr("[DEBUG]: " + msg)
 
+
 def info(msg: str) -> None:
     _write_stderr("[INFO]: " + msg)
 
+
 def warn(msg: str) -> None:
     _write_stderr("[WARN]: " + msg)
+
 
 def error(msg: str) -> None:
     _write_stderr("[ERROR]: " + msg)
@@ -57,7 +62,7 @@ class ProfileDialog(Gtk.Application):
         # Create main window
         window = Gtk.ApplicationWindow(application=app)
         window.set_title(APP_NAME)
-        window.set_default_size(500, 320)
+        window.set_default_size(680, 420)
         window.set_resizable(False)
 
         # Apply CSS
@@ -67,7 +72,7 @@ class ProfileDialog(Gtk.Application):
             Gtk.StyleContext.add_provider_for_display(
                 Gdk.Display.get_default(),
                 css_provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_USER
+                Gtk.STYLE_PROVIDER_PRIORITY_USER,
             )
         else:
             warn(f'Style file "{self.args.style}" not found')
@@ -93,11 +98,17 @@ class ProfileDialog(Gtk.Application):
             button = self.create_profile_button(profile)
             button_box.append(button)
 
+        add_new_button = self.create_button(
+            "add new",
+            Gtk.Image.new_from_icon_name("list-add"),
+        )
+        add_new_button.connect("clicked", self.on_add_new_clicked)
+        button_box.append(add_new_button)
+
         outer_box.append(button_box)
         scrolled.set_child(outer_box)
         window.set_child(scrolled)
         window.present()
-
 
     def create_profile_button(self, profile):
         name = profile["name"]
@@ -114,8 +125,12 @@ class ProfileDialog(Gtk.Application):
             warn(f"Profile image not found (profile={name}).")
             image = Gtk.Image.new_from_icon_name("avatar-default")
 
-        image.set_pixel_size(82)
+        button = self.create_button(name, image)
+        button.connect("clicked", self.on_profile_clicked, name)
+        return button
 
+    def create_button(self, name, image):
+        image.set_pixel_size(82)
         # Create horizontal layout
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         hbox.set_margin_top(6)
@@ -132,13 +147,16 @@ class ProfileDialog(Gtk.Application):
 
         button = Gtk.Button()
         button.set_child(hbox)
-        button.connect("clicked", self.on_profile_clicked, name)
-
         return button
 
     def on_profile_clicked(self, button, profile_name):
         subprocess.Popen(["firefox", "-P", profile_name])
         self.quit()
+
+    def on_add_new_clicked(self, button):
+        subprocess.Popen(["firefox", "-p"])
+        self.quit()
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -152,6 +170,7 @@ def main():
         required=False,
     )
     ProfileDialog(parser.parse_args()).run()
+
 
 if __name__ == "__main__":
     main()

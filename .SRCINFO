@@ -1,7 +1,7 @@
 pkgbase = firefox-profile-launcher
 	pkgdesc = Simple Firefox profile launcher
 	pkgver = 1.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/jfsanchez91/firefox-profile-launcher
 	arch = any
 	license = MIT
