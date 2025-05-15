@@ -164,3 +164,8 @@ cython_debug/
 pytest-report.xml
 pytest-failure-report.json
 *.pem
+
+# arch build
+*.pkg.tar.zst
+pkg/
+src/
